@@ -1683,7 +1683,7 @@ int main(int argc, char **argv)
     
     /* start rtk server */
     if (start) {
-        startsvr(NULL);
+        startsvr(con[0]->vt);
     }
     while (!intflg) {
         /* accept remote console connection */
