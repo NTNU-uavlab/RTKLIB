@@ -1211,7 +1211,8 @@ static void cmd_set(char **args, int narg, vt_t *vt)
         vt_printf(vt,"invalid option value: %s %s\n",opt->name,buff);
         return;
     }
-    getsysopts(&prcopt,solopt,&filopt);
+    getsysopts(&prcopt,&solopt[0],&filopt);
+    getsysopts(&prcopt,&solopt[1],&filopt);
     
     vt_printf(vt,"option %s changed.",opt->name);
     if (strncmp(opt->name,"console",7)) {
@@ -1238,7 +1239,8 @@ static void cmd_load(char **args, int narg, vt_t *vt)
         vt_printf(vt,"no options file: %s\n",file);
         return;
     }
-    getsysopts(&prcopt,solopt,&filopt);
+    getsysopts(&prcopt,&solopt[0],&filopt);
+    getsysopts(&prcopt,&solopt[1],&filopt);;
     
     if (!loadopts(file,rcvopts)) {
         vt_printf(vt,"no options file: %s\n",file);
@@ -1642,7 +1644,8 @@ int main(int argc, char **argv)
     if (!loadopts(file,rcvopts)||!loadopts(file,sysopts)) {
         fprintf(stderr,"no options file: %s. defaults used\n",file);
     }
-    getsysopts(&prcopt,solopt,&filopt);
+    getsysopts(&prcopt,&solopt[0],&filopt);
+    getsysopts(&prcopt,&solopt[1],&filopt);
     
     /* read navigation data */
     if (!readnav(NAVIFILE,&svr.nav)) {
