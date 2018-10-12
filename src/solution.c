@@ -520,7 +520,24 @@ static int decode_solenu(char *buff, const solopt_t *opt, sol_t *sol)
     }
     if (i<n) sol->age  =(float)val[i++];
     if (i<n) sol->ratio=(float)val[i++];
-    
+
+    if (i+3<=n) { /* velocity */
+        for (j=0;j<3;j++) {
+            sol->rr[j+3]=val[i++]; /* vel-enu */
+        }
+    }
+    if (i+3<=n) {
+        for (j=0;j<9;j++) Q[j]=0.0;
+        Q[0]=val[i]*val[i]; i++; /* sde */
+        Q[4]=val[i]*val[i]; i++; /* sdn */
+        Q[8]=val[i]*val[i]; i++; /* sdu */
+        if (i+3<=n) {
+            Q[1]=Q[3]=SQR(val[i]); i++; /* sden */
+            Q[5]=Q[7]=SQR(val[i]); i++; /* sdnu */
+            Q[2]=Q[6]=SQR(val[i]); i++; /* sdue */
+        }
+        covtosol_vel(Q,sol);
+    }
     sol->type=1; /* postion type = enu */
     
     if (MAXSOLQ<sol->stat) sol->stat=SOLQ_NONE;
