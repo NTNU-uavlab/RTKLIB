@@ -176,10 +176,10 @@ __fastcall TPlot::TPlot(TComponent* Owner) : TForm(Owner)
     FrqType->Items->Clear();
     FrqType->Items->Add("L1/LC");
     if (nfreq>=2) FrqType->Items->Add("L2");
-    if (nfreq>=3) FrqType->Items->Add("L5");
-    if (nfreq>=4) FrqType->Items->Add("L6");
-    if (nfreq>=5) FrqType->Items->Add("L7");
-    if (nfreq>=6) FrqType->Items->Add("L8");
+    if (nfreq>=3) FrqType->Items->Add("E5b");
+    if (nfreq>=4) FrqType->Items->Add("L5");
+    if (nfreq>=5) FrqType->Items->Add("E6");
+    if (nfreq>=6) FrqType->Items->Add("E5ab");
     FrqType->ItemIndex=0;
     
     TLEData.n=TLEData.nmax=0;
@@ -2812,6 +2812,7 @@ void __fastcall TPlot::LoadOpt(void)
     Font->Size=ini->ReadInteger("plot","fontsize",8);
     
     RnxOpts   =ini->ReadString ("plot","rnxopts","");
+    ApiKey    =ini->ReadString ("plot","apikey" ,"");
     
     for (i=0;i<11;i++) {
         geopts[i]=ini->ReadInteger("ge",s.sprintf("geopts_%d",i),0);
@@ -2951,6 +2952,7 @@ void __fastcall TPlot::SaveOpt(void)
     ini->WriteInteger("plot","fontsize",     Font->Size    );
     
     ini->WriteString ("plot","rnxopts",      RnxOpts       );
+    ini->WriteString ("plot","apikey",       ApiKey        );
     
     GoogleEarthView->GetOpts(geopts);
     for (i=0;i<11;i++) {

@@ -116,6 +116,7 @@ static int modflgr[256] ={0};           /* modified flags of receiver options */
 static int modflgs[256] ={0};           /* modified flags of system options */
 static int moniport     =0;             /* monitor port */
 static int keepalive    =0;             /* keep alive flag */
+static int start        =0;             /* auto start */
 static int fswapmargin  =30;            /* file swap margin (s) */
 static char sta_name[256]="";           /* station name */
 
@@ -632,11 +633,12 @@ static void prstatus(vt_t *vt)
          "single","DGPS","kinematic","static","static-start","moving-base","fixed",
          "PPP-kinema","PPP-static"
     };
-    const char *freq[]={"-","L1","L1+L2","L1+L2+L5","","",""};
+    gtime_t eventime={0};
+    const char *freq[]={"-","L1","L1+L2","L1+L2+E5b","L1+L2+E5b+L5","",""};
     rtcm_t rtcm[3];
-    int i,j,n,thread,cycle,state,rtkstat,nsat0,nsat1,prcout,nave;
+    int i,j,n,thread,cycle,state,rtkstat,nsat0,nsat1,prcout,rcvcount,tmcount,timevalid,nave;
     int cputime,nb[3]={0},nmsg[3][10]={{0}};
-    char tstr[64],s[1024],*p;
+    char tstr[64],tmstr[64],s[1024],*p;
     double runtime,rt[3]={0},dop[4]={0},rr[3],bl1=0.0,bl2=0.0;
     double azel[MAXSAT*2],pos[3],vel[3],*del;
     
@@ -650,6 +652,8 @@ static void prstatus(vt_t *vt)
     rtkstat=svr.rtk.sol.stat;
     nsat0=svr.obs[0][0].n;
     nsat1=svr.obs[1][0].n;
+    rcvcount = svr.raw[0].obs.rcvcount;
+    tmcount = svr.raw[0].obs.tmcount;
     cputime=svr.cputime;
     prcout=svr.prcout;
     nave=svr.nave;
@@ -663,6 +667,11 @@ static void prstatus(vt_t *vt)
         rt[1]=floor(runtime/60.0); rt[2]=runtime-rt[1]*60.0;
     }
     for (i=0;i<3;i++) rtcm[i]=svr.rtcm[i];
+    if (svr.raw[0].obs.data != NULL) {
+        timevalid = svr.raw[0].obs.data[0].timevalid;
+        eventime = svr.raw[0].obs.data[0].eventime;
+    }
+    time2str(eventime,tmstr,9);
     rtksvrunlock(&svr);
     
     for (i=n=0;i<MAXSAT;i++) {
@@ -763,7 +772,9 @@ static void prstatus(vt_t *vt)
     }
     vt_printf(vt,"%-28s: %.3f\n","baseline length float (m)",bl1);
     vt_printf(vt,"%-28s: %.3f\n","baseline length fixed (m)",bl2);
-    vt_printf(vt,"%-28s: %d\n","monitor port",moniport);
+    vt_printf(vt,"%-28s: %s\n","last time mark",tmcount ? tmstr : "-");
+    vt_printf(vt,"%-28s: %d\n","receiver time mark count",rcvcount);
+    vt_printf(vt,"%-28s: %d\n","rtklib time mark count",tmcount);
 }
 /* print satellite -----------------------------------------------------------*/
 static void prsatellite(vt_t *vt, int nf)
@@ -1352,6 +1363,13 @@ static void *con_thread(void *arg)
         con->state=0;
         return 0;
     }
+ 
+    /* auto start if option set */
+    if (start) {
+        cmd_start(args,narg,con->vt);
+        start=0;
+    }
+    
     while (con->state) {
         
         /* output prompt */
@@ -1614,7 +1632,7 @@ static void accept_sock(int ssock, con_t **con)
 int main(int argc, char **argv)
 {
     con_t *con[MAXCON]={0};
-    int i,start=0,port=0,outstat=0,trace=0,sock=0;
+    int i,port=0,outstat=0,trace=0,sock=0;
     char *dev="",file[MAXSTR]="";
     
     for (i=1;i<argc;i++) {
@@ -1683,11 +1701,7 @@ int main(int argc, char **argv)
     signal(SIGUSR2,sigshut);
     signal(SIGHUP ,SIG_IGN);
     signal(SIGPIPE,SIG_IGN);
-    
-    /* start rtk server */
-    if (start) {
-        startsvr(con[0]->vt);
-    }
+
     while (!intflg) {
         /* accept remote console connection */
         accept_sock(sock,con);
